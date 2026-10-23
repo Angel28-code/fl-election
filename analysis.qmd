@@ -33,25 +33,6 @@ gov_rep_raw <- read_tsv(
 ) |>
   filter(office == "Governor", party == "REP")
 
-gov_rep <- gov_rep_raw |>
-  summarize(total_votes = sum(votes, na.rm = TRUE), .by = candidate)
-
-gov_rep |>
-  mutate(candidate = fct_reorder(candidate, total_votes)) |>
-  ggplot(aes(x = total_votes, y = candidate)) +
-  geom_col(fill = "#b22222") +
-  scale_x_continuous(labels = label_comma()) +
-  labs(
-    title = "2026 Florida Republican Primary for Governor",
-    subtitle = "Official statewide vote totals by candidate",
-    x = "Total Votes",
-    y = NULL,
-    caption = "Source: Florida Department of State"
-  ) +
-  theme_minimal()
-```
-
-```{r}
 county_winners <- gov_rep_raw |>
   summarize(votes = sum(votes, na.rm = TRUE), .by = c(county, candidate)) |>
   mutate(
@@ -80,3 +61,10 @@ ggplot(fl_counties) +
   ) +
   theme_void()
 ```
+
+## Candidate Benefits & Key Proposals
+
+- **Byron Donalds** (won 50 counties): Promised a business-friendly, low-tax economy, further deregulation to ease inflation costs, and expanded school choice paired with workforce-ready education pathways.
+- **Jay Collins** (won 17 counties): Emphasized continuity with the DeSantis administration, enhanced support for law enforcement, military families, and veterans, and stronger state infrastructure and disaster resiliency.
+- **James Fishback**: Campaigned on eliminating property taxes, rolling local government spending back to 2021 levels to lower the cost of living, and protecting local power grids and water resources from large data centers.
+- **Paul Renner**: Highlighted his legislative record on universal school choice and fiscal restraint, proposing further cuts to state red tape and relief from high property insurance rates for Florida homeowners.
