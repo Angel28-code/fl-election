@@ -1,0 +1,82 @@
+---
+title: "2026 Florida Republican Primary for Governor"
+format: html
+execute:
+  echo: false
+  message: false
+  warning: false
+---
+
+```{r}
+library(tidyverse)
+library(scales)
+library(sf)
+library(tigris)
+
+options(tigris_use_cache = TRUE)
+
+# Extract county precinct files to a temporary directory and read them all at once
+tmp_dir <- tempdir()
+files <- unzip("2026-pri-outputofficial.zip", exdir = tmp_dir)
+
+gov_rep_raw <- read_tsv(
+  files,
+  col_names = FALSE,
+  col_select = c(
+    county = X2,
+    office = X12,
+    candidate = X15,
+    party = X16,
+    votes = X19
+  ),
+  show_col_types = FALSE
+) |>
+  filter(office == "Governor", party == "REP")
+
+gov_rep <- gov_rep_raw |>
+  summarize(total_votes = sum(votes, na.rm = TRUE), .by = candidate)
+
+gov_rep |>
+  mutate(candidate = fct_reorder(candidate, total_votes)) |>
+  ggplot(aes(x = total_votes, y = candidate)) +
+  geom_col(fill = "#b22222") +
+  scale_x_continuous(labels = label_comma()) +
+  labs(
+    title = "2026 Florida Republican Primary for Governor",
+    subtitle = "Official statewide vote totals by candidate",
+    x = "Total Votes",
+    y = NULL,
+    caption = "Source: Florida Department of State"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+county_winners <- gov_rep_raw |>
+  summarize(votes = sum(votes, na.rm = TRUE), .by = c(county, candidate)) |>
+  mutate(
+    vote_share = votes / sum(votes),
+    county_key = str_to_lower(county),
+    .by = county
+  ) |>
+  slice_max(votes, n = 1, with_ties = FALSE, by = county)
+
+fl_counties <- counties(state = "FL", cb = TRUE, progress_bar = FALSE) |>
+  mutate(county_key = str_to_lower(NAME)) |>
+  left_join(county_winners, by = "county_key")
+
+ggplot(fl_counties) +
+  geom_sf(aes(fill = candidate, alpha = vote_share), color = "white", linewidth = 0.2) +
+  scale_fill_brewer(palette = "Set1", name = "Winning Candidate") +
+  scale_alpha_continuous(
+    name = "Vote Share",
+    labels = label_percent(accuracy = 1),
+    range = c(0.4, 1)
+  ) +
+  labs(
+    title = "Winning Candidate by County: 2026 Republican Primary for Governor",
+    subtitle = "Shaded by the winner's share of the county vote",
+    caption = "Source: Florida Department of State & U.S. Census Bureau (tigris)"
+  ) +
+  theme_void()
+```
